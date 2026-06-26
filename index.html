@@ -132,6 +132,22 @@
 const $ = id => document.getElementById(id);
 let sb = null;
 
+// ── Limpia el nombre para GUARDARLO (Supabase no acepta tildes,
+//    comas, espacios ni caracteres raros en la ruta del archivo) ──
+function limpiarNombre(nombre){
+  return nombre
+    .normalize("NFD").replace(/[̀-ͯ]/g, "") // quita tildes: í→i, ñ→n
+    .replace(/[^a-zA-Z0-9.\-]+/g, "_")                // lo no permitido → _
+    .replace(/_+/g, "_")                              // junta varios _ en uno
+    .replace(/^_|_$/g, "");                           // quita _ sobrantes
+}
+
+// ── Convierte el nombre guardado en algo legible para MOSTRAR ──
+//    (quita el prefijo de fecha y cambia los _ por espacios) ──
+function nombreVisible(key){
+  return key.replace(/^\d+_/, "").replace(/_/g, " ");
+}
+
 // ── Arranque ──────────────────────────────────────────────
 function init(){
   if(SUPABASE_URL.includes("PEGA_AQUI") || SUPABASE_ANON.includes("PEGA_AQUI")){
@@ -163,7 +179,7 @@ async function listarArchivos(){
     const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(f.name);
     const li = document.createElement("li");
     const name = document.createElement("span");
-    name.className = "file-name"; name.textContent = f.name;
+    name.className = "file-name"; name.textContent = nombreVisible(f.name);
     const a = document.createElement("a");
     a.className = "btn"; a.textContent = "Descargar";
     a.href = pub.publicUrl; a.setAttribute("download", "");
@@ -231,7 +247,7 @@ $("btnUpload").addEventListener("click", async ()=>{
   $("uploadMsg").textContent = "";
   if(!file){ $("uploadMsg").textContent = "Elige un archivo primero."; return; }
   $("btnUpload").disabled = true;
-  const ruta = `${Date.now()}_${file.name}`;
+  const ruta = `${Date.now()}_${limpiarNombre(file.name)}`;
   const { error } = await sb.storage.from(BUCKET).upload(ruta, file);
   $("btnUpload").disabled = false;
   if(error){
