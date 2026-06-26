@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repositorio</title>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PASO ÚNICO: pega aquí tu URL y tu clave anon (Settings → API).
+     La clave anon es pública y segura para el frontend.
+     ════════════════════════════════════════════════════════════════ -->
+<script>
+  const SUPABASE_URL  = "https://jgxznksuzogkuwmmrjzw.supabase.co";   // ej: https://abcdxyz.supabase.co
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpneHpua3N1em9na3V3bW1yanp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjcxOTgsImV4cCI6MjA5ODAwMzE5OH0.HdmGMTw3LZJUQS23VTBXPXL6JCXT8F7y3-MSesmoLYI";    // empieza con eyJhbG... o sb_publishable_...
+  const BUCKET = "archivos";                          // el nombre de tu bucket
+</script>
+<!-- ════════════════════════════════════════════════════════════════ -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --paper:#F7F6F1; --ink:#161616; --muted:#6B6B63; --line:#DDD9CD;
+    --accent:#27408B; --err:#A02A2A; --card:#FFFFFF;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.5;}
+
+  .navbar{display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; border-bottom:2px solid var(--ink); flex-wrap:wrap; gap:12px;}
+  .brand{font-size:18px; font-weight:700; letter-spacing:-.01em;}
+  .nav-right{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-user{font-size:13px; color:var(--muted); display:inline-flex; align-items:center; gap:8px;}
+
+  .badge{font:600 11px/1 ui-monospace,monospace; letter-spacing:.06em;
+    text-transform:uppercase; padding:4px 8px; border-radius:20px;}
+  .badge.editor{background:#E8EDFB; color:var(--accent);}
+  .badge.lector{background:#EFEEE7; color:var(--muted);}
+
+  .wrap{max-width:720px; margin:0 auto; padding:40px 24px;}
+  .eyebrow{font:600 11px/1 ui-monospace,monospace; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 8px;}
+  h1{margin:0; font-size:28px; letter-spacing:-.02em;}
+  .subtitle{color:var(--muted); margin:8px 0 28px;}
+
+  ul.files{list-style:none; margin:0; padding:0;}
+  ul.files li{display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:14px 0; border-bottom:1px solid var(--line);}
+  .file-name{font-size:15px; word-break:break-all;}
+  .empty{text-align:center; padding:40px 0; border:1px dashed var(--line);
+    border-radius:12px; color:var(--muted);}
+
+  .btn{font:600 14px/1 system-ui; padding:10px 18px; border-radius:8px;
+    border:1px solid var(--ink); background:var(--ink); color:#fff;
+    cursor:pointer; text-decoration:none; display:inline-block;}
+  .btn:hover{opacity:.88}
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .btn-ghost{font:600 13px/1 system-ui; padding:8px 14px; border-radius:8px;
+    border:1px solid var(--line); background:transparent; color:var(--ink); cursor:pointer;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:24px; margin-top:20px;}
+  .card h2{margin:0 0 16px; font-size:13px; text-transform:uppercase;
+    letter-spacing:.08em; color:var(--muted);}
+  .card label{display:block; font-size:12px; color:var(--muted); margin:0 0 4px;}
+  .card input[type=email],.card input[type=password]{width:100%; padding:10px 12px;
+    border:1px solid var(--line); border-radius:8px; font-size:15px;
+    margin-bottom:16px; background:var(--paper);}
+  .card input:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:transparent;}
+  .upload-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+
+  .muted{color:var(--muted)} .error{color:var(--err); font-size:14px;}
+  .hidden{display:none}
+  .config-warn{background:#FBF3D9; border:1px solid #E6D38A; color:#6B5A1E;
+    padding:12px 14px; border-radius:8px; margin-bottom:18px;}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">Repositorio</span>
+  <div class="nav-right">
+    <!-- Sin sesión: enlace para que entren los editores -->
+    <button id="btnMostrarLogin" class="btn-ghost">Acceso editores</button>
+    <!-- Con sesión: datos del usuario + cerrar sesión -->
+    <span id="navUser" class="nav-user hidden"></span>
+    <button id="btnLogout" class="btn-ghost hidden">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div id="configWarn" class="config-warn hidden">
+    Falta pegar tu <b>Project URL</b> y tu <b>clave anon</b> arriba en el código.
+  </div>
+
+  <p class="eyebrow">Archivos disponibles</p>
+  <h1>Repositorio</h1>
+  <p class="subtitle">Descarga cualquier archivo libremente. No necesitas iniciar sesión.</p>
+
+  <!-- LISTA PÚBLICA DE ARCHIVOS -->
+  <ul class="files" id="fileList"></ul>
+  <div id="emptyState" class="empty hidden">
+    Todavía no hay archivos. Cuando un editor suba algo, aparecerá aquí.
+  </div>
+  <p id="listError" class="error"></p>
+
+  <!-- LOGIN (oculto hasta que lo pidan) -->
+  <div id="loginCard" class="card hidden">
+    <h2>Acceso de editores</h2>
+    <label for="email">Correo</label>
+    <input id="email" type="email" autocomplete="username">
+    <label for="password">Contraseña</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <p id="loginError" class="error"></p>
+    <button id="btnLogin" class="btn">Entrar</button>
+  </div>
+
+  <!-- SUBIDA (solo visible para editores) -->
+  <div id="uploadCard" class="card hidden">
+    <h2>Subir archivo</h2>
+    <div class="upload-row">
+      <input type="file" id="fileInput">
+      <button id="btnUpload" class="btn">Subir</button>
+    </div>
+    <p id="uploadMsg" class="muted" style="margin-top:10px"></p>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let sb = null;
+
+// ── Arranque ──────────────────────────────────────────────
+function init(){
+  if(SUPABASE_URL.includes("PEGA_AQUI") || SUPABASE_ANON.includes("PEGA_AQUI")){
+    $("configWarn").classList.remove("hidden");
+    return;
+  }
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  listarArchivos();          // la lista es pública: se carga siempre
+  revisarSesion();           // por si ya había un editor logueado
+}
+
+// ── Lista pública de archivos ─────────────────────────────
+async function listarArchivos(){
+  const { data, error } = await sb.storage.from(BUCKET)
+    .list("", { limit:100, sortBy:{ column:"created_at", order:"desc" } });
+
+  const ul = $("fileList");
+  ul.innerHTML = "";
+  $("listError").textContent = "";
+
+  if(error){ $("listError").textContent = "No se pudieron cargar los archivos: " + error.message; return; }
+
+  const files = (data || []).filter(f => f.name !== ".emptyFolderPlaceholder");
+  if(files.length === 0){ $("emptyState").classList.remove("hidden"); return; }
+  $("emptyState").classList.add("hidden");
+
+  for(const f of files){
+    // Bucket público → URL directa, sin login ni URL firmada
+    const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(f.name);
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "file-name"; name.textContent = f.name;
+    const a = document.createElement("a");
+    a.className = "btn"; a.textContent = "Descargar";
+    a.href = pub.publicUrl; a.setAttribute("download", "");
+    li.append(name, a);
+    ul.appendChild(li);
+  }
+}
+
+// ── Mostrar / ocultar el login ────────────────────────────
+$("btnMostrarLogin").addEventListener("click", ()=>{
+  $("loginCard").classList.toggle("hidden");
+});
+
+// ── Login ─────────────────────────────────────────────────
+$("btnLogin").addEventListener("click", async ()=>{
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  $("loginError").textContent = "";
+  if(!email || !password){ $("loginError").textContent = "Escribe correo y contraseña."; return; }
+  $("btnLogin").disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  $("btnLogin").disabled = false;
+  if(error){ $("loginError").textContent = "No se pudo entrar: " + error.message; return; }
+  $("loginCard").classList.add("hidden");
+  revisarSesion();
+});
+
+// ── Logout ────────────────────────────────────────────────
+$("btnLogout").addEventListener("click", async ()=>{
+  await sb.auth.signOut();
+  revisarSesion();
+});
+
+// ── Revisa si hay editor logueado y ajusta la interfaz ────
+async function revisarSesion(){
+  const { data:{ user } } = await sb.auth.getUser();
+
+  if(!user){
+    // Nadie logueado: modo visitante
+    $("navUser").classList.add("hidden");
+    $("btnLogout").classList.add("hidden");
+    $("btnMostrarLogin").classList.remove("hidden");
+    $("uploadCard").classList.add("hidden");
+    return;
+  }
+
+  // Hay sesión: leemos el rol
+  let role = "lector";
+  const { data: profile } = await sb.from("profiles").select("role").eq("id", user.id).single();
+  if(profile) role = profile.role;
+
+  $("navUser").innerHTML = `${user.email} <span class="badge ${role}">${role}</span>`;
+  $("navUser").classList.remove("hidden");
+  $("btnLogout").classList.remove("hidden");
+  $("btnMostrarLogin").classList.add("hidden");
+
+  // El recuadro de subir solo aparece para editores
+  if(role === "editor") $("uploadCard").classList.remove("hidden");
+  else $("uploadCard").classList.add("hidden");
+}
+
+// ── Subir archivo (solo editores) ─────────────────────────
+$("btnUpload").addEventListener("click", async ()=>{
+  const file = $("fileInput").files[0];
+  $("uploadMsg").textContent = "";
+  if(!file){ $("uploadMsg").textContent = "Elige un archivo primero."; return; }
+  $("btnUpload").disabled = true;
+  const ruta = `${Date.now()}_${file.name}`;
+  const { error } = await sb.storage.from(BUCKET).upload(ruta, file);
+  $("btnUpload").disabled = false;
+  if(error){
+    $("uploadMsg").innerHTML = `<span class="error">No se pudo subir: ${error.message}</span>`;
+  } else {
+    $("uploadMsg").textContent = "¡Archivo subido!";
+    $("fileInput").value = "";
+    listarArchivos();   // refresca la lista para verlo
+  }
+});
+
+init();
+</script>
+</body>
+</html>
