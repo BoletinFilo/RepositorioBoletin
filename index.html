@@ -303,13 +303,35 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 /* ── IMAGE POSITION MODAL ── */
 #imgPosOverlay{display:none;position:fixed;inset:0;z-index:9800;background:rgba(10,20,40,.8);backdrop-filter:blur(6px);align-items:center;justify-content:center;}
 #imgPosOverlay.open{display:flex;}
-#imgPosBox{background:var(--white);max-width:520px;width:92%;border-top:4px solid var(--gold);padding:1.8rem;}
-.imgpos-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--navy);margin-bottom:1.2rem;font-weight:600;}
-.imgpos-preview{width:100%;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--border);margin-bottom:1rem;display:block;}
-.imgpos-label{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;display:block;}
-.imgpos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:1.2rem;}
-.imgpos-btn{padding:.45rem;font-size:.68rem;font-weight:600;border:1.5px solid var(--border);background:var(--cream);cursor:pointer;transition:background .2s,border-color .2s;text-align:center;}
-.imgpos-btn:hover,.imgpos-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+#imgPosBox{background:var(--white);max-width:540px;width:92%;border-top:4px solid var(--gold);padding:1.8rem;}
+.imgpos-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--navy);margin-bottom:.8rem;font-weight:600;}
+.imgpos-label{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;display:block;}
+/* Drag zone: the image is full-size, user drags to pan */
+.imgpos-drag-wrap{
+  width:100%;aspect-ratio:16/9;position:relative;
+  overflow:hidden;border:2px solid var(--gold);
+  margin-bottom:1rem;cursor:grab;user-select:none;
+  background:#111;
+}
+.imgpos-drag-wrap.dragging{cursor:grabbing;}
+.imgpos-drag-wrap img{
+  /* Larger than container so there's room to pan */
+  position:absolute;
+  width:140%;height:140%;
+  object-fit:cover;
+  pointer-events:none;
+  transition:none;
+}
+/* Crosshair overlay */
+.imgpos-crosshair{
+  position:absolute;inset:0;pointer-events:none;z-index:2;
+}
+.imgpos-crosshair::before,.imgpos-crosshair::after{
+  content:'';position:absolute;background:rgba(255,255,255,.35);
+}
+.imgpos-crosshair::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-50%);}
+.imgpos-crosshair::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-50%);}
+.imgpos-hint{font-size:.72rem;color:var(--faint);font-style:italic;margin-bottom:1rem;text-align:center;}
 .imgpos-actions{display:flex;gap:.6rem;}
 
 @media(max-width:700px){
@@ -326,19 +348,12 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 <div id="imgPosOverlay">
   <div id="imgPosBox">
     <div class="imgpos-title">Ajustar posición de la imagen</div>
-    <img id="imgPosPreview" class="imgpos-preview" src="" alt="">
-    <span class="imgpos-label">La imagen tiene proporción 16:9. Elige el área a mostrar:</span>
-    <div class="imgpos-grid">
-      <button class="imgpos-btn" onclick="setImgPos('top left')">↖ Arriba izq.</button>
-      <button class="imgpos-btn" onclick="setImgPos('top center')">↑ Arriba centro</button>
-      <button class="imgpos-btn" onclick="setImgPos('top right')">↗ Arriba der.</button>
-      <button class="imgpos-btn" onclick="setImgPos('center left')">← Centro izq.</button>
-      <button class="imgpos-btn active" onclick="setImgPos('center')">✦ Centro</button>
-      <button class="imgpos-btn" onclick="setImgPos('center right')">→ Centro der.</button>
-      <button class="imgpos-btn" onclick="setImgPos('bottom left')">↙ Abajo izq.</button>
-      <button class="imgpos-btn" onclick="setImgPos('bottom center')">↓ Abajo centro</button>
-      <button class="imgpos-btn" onclick="setImgPos('bottom right')">↘ Abajo der.</button>
+    <span class="imgpos-label">Arrastra la imagen para encuadrar el área deseada</span>
+    <div class="imgpos-drag-wrap" id="imgPosDragWrap">
+      <img id="imgPosPreview" src="" alt="">
+      <div class="imgpos-crosshair"></div>
     </div>
+    <div class="imgpos-hint">Puedes mover la imagen libremente. El recuadro muestra lo que verán los visitantes.</div>
     <div class="imgpos-actions">
       <button class="btn-primary" onclick="confirmImgPos()">Aplicar</button>
       <button class="btn-ghost" onclick="closeImgPos()">Cancelar</button>
@@ -725,38 +740,114 @@ async function uploadFotoToSupabase(file) {
   return data.publicUrl;
 }
 
-/* ── IMAGE POSITION MODAL ── */
-function openImgPos(url, currentPos, onConfirmCb) {
-  imgPosState.url = url;
-  imgPosState.pos = currentPos || 'center';
-  imgPosState.onConfirm = onConfirmCb;
-  imgPosState.selectedPos = currentPos || 'center';
-  const preview = document.getElementById('imgPosPreview');
-  preview.src = url;
-  preview.style.objectPosition = imgPosState.pos;
-  document.querySelectorAll('.imgpos-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.trim().includes(posLabel(imgPosState.pos)));
-  });
-  document.getElementById('imgPosOverlay').classList.add('open');
-}
-function posLabel(pos) {
-  const map = {'top left':'↖','top center':'↑','top right':'↗','center left':'←','center':'✦','center right':'→','bottom left':'↙','bottom center':'↓','bottom right':'↘'};
-  return map[pos] || '✦';
-}
-window.setImgPos = function(pos) {
-  imgPosState.selectedPos = pos;
-  document.getElementById('imgPosPreview').style.objectPosition = pos;
-  document.querySelectorAll('.imgpos-btn').forEach(b => {
-    b.classList.toggle('active', b.onclick?.toString().includes("'" + pos + "'"));
-  });
-};
-window.confirmImgPos = function() {
-  if (imgPosState.onConfirm) imgPosState.onConfirm(imgPosState.selectedPos);
-  document.getElementById('imgPosOverlay').classList.remove('open');
-};
-window.closeImgPos = function() {
-  document.getElementById('imgPosOverlay').classList.remove('open');
-};
+/* ── IMAGE POSITION MODAL — FREE DRAG ── */
+(function() {
+  // Drag state
+  let drag = { active: false, startX: 0, startY: 0, imgX: 0, imgY: 0 };
+  // imgX/imgY are percentage offsets of the image's top-left corner
+  // within the drag-wrap. Range: clamped so image always fills wrap.
+
+  function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+
+  function applyPos(imgEl, wrap, pct) {
+    // pct = { x: 0-100, y: 0-100 } — where 50/50 = center
+    // Image is 140% of wrap. Overflow = 40%.
+    // Translate range: -40% to 0% in each axis.
+    const tx = clamp(-(pct.x / 100) * 40, -40, 0);
+    const ty = clamp(-(pct.y / 100) * 40, -40, 0);
+    imgEl.style.left  = tx + '%';
+    imgEl.style.top   = ty + '%';
+  }
+
+  function parsePct(stored) {
+    // stored can be "50% 50%" CSS or legacy keywords like "center", "top left"
+    if (!stored || stored === 'center') return { x: 50, y: 50 };
+    const keyMap = {
+      'top':50,'bottom':100,'left':0,'right':100,'center':50
+    };
+    const parts = stored.trim().split(/\s+/);
+    if (parts.length === 1) {
+      const v = parseFloat(parts[0]);
+      if (!isNaN(v)) return { x: v, y: v };
+      const k = keyMap[parts[0]] ?? 50;
+      return { x: k, y: k };
+    }
+    const px = parts[0].endsWith('%') ? parseFloat(parts[0]) : (keyMap[parts[0]] ?? 50);
+    const py = parts[1].endsWith('%') ? parseFloat(parts[1]) : (keyMap[parts[1]] ?? 50);
+    return { x: isNaN(px)?50:px, y: isNaN(py)?50:py };
+  }
+
+  function pctToCSS(pct) { return `${Math.round(pct.x)}% ${Math.round(pct.y)}%`; }
+
+  window.openImgPos = function(url, currentPos, onConfirmCb) {
+    imgPosState.url = url;
+    imgPosState.onConfirm = onConfirmCb;
+    const pct = parsePct(currentPos);
+    imgPosState.currentPct = { ...pct };
+    imgPosState.selectedPos = pctToCSS(pct);
+
+    const overlay = document.getElementById('imgPosOverlay');
+    const wrap    = document.getElementById('imgPosDragWrap');
+    const imgEl   = document.getElementById('imgPosPreview');
+    imgEl.src = url;
+    applyPos(imgEl, wrap, pct);
+    overlay.classList.add('open');
+
+    // Drag handlers
+    function getXY(e) {
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX, y: t.clientY };
+    }
+    function onDown(e) {
+      e.preventDefault();
+      const { x, y } = getXY(e);
+      drag = { active: true, startX: x, startY: y,
+               imgX: imgPosState.currentPct.x, imgY: imgPosState.currentPct.y };
+      wrap.classList.add('dragging');
+    }
+    function onMove(e) {
+      if (!drag.active) return;
+      e.preventDefault();
+      const { x, y } = getXY(e);
+      const rect = wrap.getBoundingClientRect();
+      // Delta in pixels → percentage of wrap size → scale for panning
+      const dx = (x - drag.startX) / rect.width  * 100;
+      const dy = (y - drag.startY) / rect.height * 100;
+      // Dragging right = moving image right = decreasing pct.x
+      const newX = clamp(drag.imgX - dx * 2.5, 0, 100);
+      const newY = clamp(drag.imgY - dy * 2.5, 0, 100);
+      imgPosState.currentPct = { x: newX, y: newY };
+      imgPosState.selectedPos = pctToCSS(imgPosState.currentPct);
+      applyPos(imgEl, wrap, imgPosState.currentPct);
+    }
+    function onUp() {
+      drag.active = false;
+      wrap.classList.remove('dragging');
+    }
+
+    // Remove old listeners first (re-open scenario)
+    wrap.replaceWith(wrap.cloneNode(true));
+    const freshWrap = document.getElementById('imgPosDragWrap');
+    const freshImg  = document.getElementById('imgPosPreview');
+    freshImg.src = url;
+    applyPos(freshImg, freshWrap, pct);
+
+    freshWrap.addEventListener('mousedown',  onDown,  { passive: false });
+    freshWrap.addEventListener('touchstart', onDown,  { passive: false });
+    document.addEventListener('mousemove',  onMove,  { passive: false });
+    document.addEventListener('touchmove',  onMove,  { passive: false });
+    document.addEventListener('mouseup',    onUp);
+    document.addEventListener('touchend',   onUp);
+  };
+
+  window.confirmImgPos = function() {
+    if (imgPosState.onConfirm) imgPosState.onConfirm(imgPosState.selectedPos);
+    document.getElementById('imgPosOverlay').classList.remove('open');
+  };
+  window.closeImgPos = function() {
+    document.getElementById('imgPosOverlay').classList.remove('open');
+  };
+})();
 
 /* ── NORMALIZE LINK ── */
 function normalizeLink(raw) {
@@ -800,6 +891,10 @@ function cardHTML(item, sec, truncate = false) {
         Link <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:10px;height:10px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>`
     : '';
+  // PDF button (divulgacion)
+  const pdfBtn = item.pdfUrl
+    ? `<a class="btn-pdf" href="${esc(item.pdfUrl)}" target="_blank" rel="noopener" style="margin-top:.8rem;">⬇ Descargar PDF</a>`
+    : '';
 
   // Read more (detail view only)
   const readMore = (!truncate && truncated)
@@ -822,7 +917,9 @@ function cardHTML(item, sec, truncate = false) {
     <div class="card-body${!truncate && truncated ? ' clamped' : ''}">${esc(bodyContent)}</div>
     ${readMore}${hint}
     ${item.etiqueta ? `<div class="card-tag">${esc(item.etiqueta)}</div>` : ''}
-    ${linkBtn}
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+      ${pdfBtn}${linkBtn}
+    </div>
   </div>`;
 }
 
@@ -988,7 +1085,7 @@ window.toggleEdit = () => {
 const FIELDS = {
   eventos:      [{k:'fecha',l:'Fecha / Período'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Workshop)'},{k:'link',l:'Link (botón "Link")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
   oportunidades:[{k:'fecha',l:'Fecha / Período'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Beca)'},{k:'link',l:'Link (botón "Link")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
-  divulgacion:  [{k:'fecha',l:'Fecha / Tipo'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Publicación)'},{k:'link',l:'Link (botón "Link")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
+  divulgacion:  [{k:'fecha',l:'Fecha / Tipo'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Publicación)'},{k:'link',l:'Link (botón "Link")'},{k:'pdf',l:'Archivo PDF (opcional)',type:'file'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
   dossier:      [{k:'tipo',l:'Tipo',type:'select',opts:['Seminario','Curso Obligatorio','Electivo','Tesis','Otro']},{k:'titulo',l:'Título del texto'},{k:'meta',l:'Metadatos (Curso · Profesor · Período)'},{k:'abstract',l:'Resumen / Abstract',type:'textarea'},{k:'link',l:'Link (botón "Link")'},{k:'pdf',l:'Archivo PDF',type:'file'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
   circulos:     [{k:'tipo',l:'Tipo',type:'select',opts:['Círculo de Lectura','Grupo de Investigación']},{k:'titulo',l:'Nombre'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiquetas',l:'Etiquetas (separadas por coma)'},{k:'horario',l:'Horario y lugar'},{k:'link',l:'Link (botón "Ver página")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}]
 };
@@ -1028,7 +1125,7 @@ window.openEdit = (sec, id) => {
   pendingFile = null; pendingFoto = null;
   document.getElementById('modal-title').textContent = 'Editar ' + ADD_LABELS[sec];
   document.getElementById('modal-fields').innerHTML = buildFields(sec, item);
-  if (sec === 'dossier') document.getElementById('mf_pdf')?.addEventListener('change', e => { pendingFile = e.target.files[0] || null; });
+  if (sec === 'dossier' || sec === 'divulgacion') document.getElementById('mf_pdf')?.addEventListener('change', e => { pendingFile = e.target.files[0] || null; });
   document.getElementById('mf_foto')?.addEventListener('change', e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -1045,7 +1142,7 @@ window.openAdd = (sec) => {
   pendingFile = null; pendingFoto = null;
   document.getElementById('modal-title').textContent = 'Agregar ' + ADD_LABELS[sec];
   document.getElementById('modal-fields').innerHTML = buildFields(sec, null);
-  if (sec === 'dossier') document.getElementById('mf_pdf')?.addEventListener('change', e => { pendingFile = e.target.files[0] || null; });
+  if (sec === 'dossier' || sec === 'divulgacion') document.getElementById('mf_pdf')?.addEventListener('change', e => { pendingFile = e.target.files[0] || null; });
   document.getElementById('mf_foto')?.addEventListener('change', e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -1076,8 +1173,8 @@ window.saveModal = async () => {
       if (el) values[f.k] = el.value.trim();
     });
 
-    // PDF a Supabase Storage
-    if (sec === 'dossier' && pendingFile) {
+    // PDF a Supabase Storage (dossier y divulgacion)
+    if ((sec === 'dossier' || sec === 'divulgacion') && pendingFile) {
       const prog = document.getElementById('uploadProgress');
       if (prog) prog.style.display = 'block';
       if (pendingFile.size > 25 * 1024 * 1024) throw new Error('El PDF supera 25 MB.');
