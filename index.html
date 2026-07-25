@@ -269,7 +269,8 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 
 
 /* ── CARD IMAGE ── */
-.card-img{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:var(--img-pos,center);display:block;border-bottom:2px solid var(--gold);margin-bottom:1rem;cursor:pointer;}
+.card-img-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;border-bottom:2px solid var(--gold);margin-bottom:1rem;cursor:pointer;}
+.card-img{width:100%;height:100%;object-fit:cover;object-position:var(--img-pos,center);display:block;transform:scale(var(--img-zoom,1));transform-origin:var(--img-pos,center);}
 .card-img-placeholder{width:100%;height:3px;background:var(--gold);display:block;}
 
 /* ── CARD TRUNCATION ── */
@@ -279,10 +280,11 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 .card-truncate-hint{font-size:.78rem;color:var(--faint);font-style:italic;margin-top:.3rem;}
 
 /* ── DOSSIER IMAGE ── */
-.dossier-img{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:var(--img-pos,center);display:block;border-bottom:2px solid var(--gold);margin-bottom:1rem;cursor:pointer;}
+.dossier-img-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;border-bottom:2px solid var(--gold);margin-bottom:1rem;cursor:pointer;}
+.dossier-img{width:100%;height:100%;object-fit:cover;object-position:var(--img-pos,center);display:block;transform:scale(var(--img-zoom,1));transform-origin:var(--img-pos,center);}
 
 /* ── CIRCULO IMAGE ── */
-.circulo-cover{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:var(--img-pos,center);display:block;border-bottom:2px solid var(--gold);cursor:pointer;}
+.circulo-cover{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:var(--img-pos,center);display:block;border-bottom:2px solid var(--gold);cursor:pointer;transform:scale(var(--img-zoom,1));transform-origin:var(--img-pos,center);}
 .circulo-cover-placeholder{width:100%;height:3px;background:var(--gold);display:block;}
 .circulo-card{border:1px solid var(--border);position:relative;overflow:hidden;display:flex;flex-direction:column;}
 .circulo-card::before{content:attr(data-initial);position:absolute;top:-.5rem;right:1rem;font-family:'Playfair Display',serif;font-size:5rem;font-weight:700;color:var(--navy);opacity:.04;line-height:1;pointer-events:none;user-select:none;z-index:0;}
@@ -315,8 +317,9 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 }
 .imgpos-drag-wrap.dragging{cursor:grabbing;}
 .imgpos-drag-wrap img{
-  /* Larger than container so there's room to pan */
+  /* Larger than container so there's room to pan; size set dynamically by JS for zoom */
   position:absolute;
+  left:0;top:0;
   width:140%;height:140%;
   object-fit:cover;
   pointer-events:none;
@@ -332,6 +335,9 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 .imgpos-crosshair::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-50%);}
 .imgpos-crosshair::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-50%);}
 .imgpos-hint{font-size:.72rem;color:var(--faint);font-style:italic;margin-bottom:1rem;text-align:center;}
+.imgpos-zoom-row{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
+.imgpos-zoom-row svg{flex-shrink:0;color:var(--muted);}
+.imgpos-zoom-row input[type=range]{flex:1;accent-color:var(--gold);cursor:pointer;}
 .imgpos-actions{display:flex;gap:.6rem;}
 
 @media(max-width:700px){
@@ -353,7 +359,12 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
       <img id="imgPosPreview" src="" alt="">
       <div class="imgpos-crosshair"></div>
     </div>
-    <div class="imgpos-hint">Puedes mover la imagen libremente. El recuadro muestra lo que verán los visitantes.</div>
+    <div class="imgpos-zoom-row">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      <input type="range" id="imgPosZoom" min="100" max="300" step="1" value="140">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+    </div>
+    <div class="imgpos-hint">Arrastra la imagen para moverla y usa el control de zoom (o la rueda del mouse) para acercar. El recuadro muestra lo que verán los visitantes.</div>
     <div class="imgpos-actions">
       <button class="btn-primary" onclick="confirmImgPos()">Aplicar</button>
       <button class="btn-ghost" onclick="closeImgPos()">Cancelar</button>
@@ -740,112 +751,139 @@ async function uploadFotoToSupabase(file) {
   return data.publicUrl;
 }
 
-/* ── IMAGE POSITION MODAL — FREE DRAG ── */
+/* ── IMAGE POSITION + ZOOM PARSING (shared by modal and card renderers) ── */
+function parseImgPos(stored) {
+  // stored: "X% Y%" (legacy) or "X% Y% Z" (position + zoom multiplier) or keywords/empty
+  if (!stored || stored === 'center') return { x: 50, y: 50, zoom: 1 };
+  const keyMap = { 'top':50,'bottom':100,'left':0,'right':100,'center':50 };
+  const parts = stored.trim().split(/\s+/);
+  let x = 50, y = 50, zoom = 1;
+  if (parts.length === 1) {
+    const v = parseFloat(parts[0]);
+    if (!isNaN(v)) { x = v; y = v; }
+    else { const k = keyMap[parts[0]] ?? 50; x = k; y = k; }
+  } else {
+    const px = parts[0].endsWith('%') ? parseFloat(parts[0]) : (keyMap[parts[0]] ?? 50);
+    const py = parts[1].endsWith('%') ? parseFloat(parts[1]) : (keyMap[parts[1]] ?? 50);
+    x = isNaN(px) ? 50 : px;
+    y = isNaN(py) ? 50 : py;
+    if (parts.length >= 3) {
+      const z = parseFloat(parts[2]);
+      if (!isNaN(z) && z > 0) zoom = z;
+    }
+  }
+  return { x, y, zoom };
+}
+function imgPosToCSS(pos) {
+  return `${Math.round(pos.x)}% ${Math.round(pos.y)}% ${pos.zoom.toFixed(2)}`;
+}
+function imgPosStyleVars(stored) {
+  const p = parseImgPos(stored);
+  return `--img-pos:${Math.round(p.x)}% ${Math.round(p.y)}%;--img-zoom:${p.zoom}`;
+}
+
+/* ── IMAGE POSITION MODAL — FREE DRAG + ZOOM ── */
 (function() {
+  const overlay  = document.getElementById('imgPosOverlay');
+  const wrap     = document.getElementById('imgPosDragWrap');
+  const imgEl    = document.getElementById('imgPosPreview');
+  const zoomSlider = document.getElementById('imgPosZoom');
+
   // Drag state
   let drag = { active: false, startX: 0, startY: 0, imgX: 0, imgY: 0 };
-  // imgX/imgY are percentage offsets of the image's top-left corner
-  // within the drag-wrap. Range: clamped so image always fills wrap.
 
   function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
-  function applyPos(imgEl, wrap, pct) {
-    // pct = { x: 0-100, y: 0-100 } — where 50/50 = center
-    // Image is 140% of wrap. Overflow = 40%.
-    // Translate range: -40% to 0% in each axis.
-    const tx = clamp(-(pct.x / 100) * 40, -40, 0);
-    const ty = clamp(-(pct.y / 100) * 40, -40, 0);
-    imgEl.style.left  = tx + '%';
-    imgEl.style.top   = ty + '%';
+  function applyPos() {
+    // imgPosState.currentPos = { x: 0-100, y: 0-100, zoom: >=1 } — 50/50 = center
+    // Image width/height (zoom%) sets how much overflow room exists to pan.
+    const zoomPct = imgPosState.currentPos.zoom * 100;
+    const overflow = zoomPct - 100; // e.g. zoom 1.4 → 40% overflow
+    imgEl.style.width  = zoomPct + '%';
+    imgEl.style.height = zoomPct + '%';
+    const tx = overflow > 0 ? clamp(-(imgPosState.currentPos.x / 100) * overflow, -overflow, 0) : 0;
+    const ty = overflow > 0 ? clamp(-(imgPosState.currentPos.y / 100) * overflow, -overflow, 0) : 0;
+    imgEl.style.left = tx + '%';
+    imgEl.style.top  = ty + '%';
+    imgPosState.selectedPos = imgPosToCSS(imgPosState.currentPos);
   }
 
-  function parsePct(stored) {
-    // stored can be "50% 50%" CSS or legacy keywords like "center", "top left"
-    if (!stored || stored === 'center') return { x: 50, y: 50 };
-    const keyMap = {
-      'top':50,'bottom':100,'left':0,'right':100,'center':50
-    };
-    const parts = stored.trim().split(/\s+/);
-    if (parts.length === 1) {
-      const v = parseFloat(parts[0]);
-      if (!isNaN(v)) return { x: v, y: v };
-      const k = keyMap[parts[0]] ?? 50;
-      return { x: k, y: k };
-    }
-    const px = parts[0].endsWith('%') ? parseFloat(parts[0]) : (keyMap[parts[0]] ?? 50);
-    const py = parts[1].endsWith('%') ? parseFloat(parts[1]) : (keyMap[parts[1]] ?? 50);
-    return { x: isNaN(px)?50:px, y: isNaN(py)?50:py };
+  function setZoom(zoom, syncSlider) {
+    zoom = clamp(zoom, 1, 3);
+    imgPosState.currentPos.zoom = zoom;
+    if (syncSlider) zoomSlider.value = Math.round(zoom * 100);
+    applyPos();
   }
 
-  function pctToCSS(pct) { return `${Math.round(pct.x)}% ${Math.round(pct.y)}%`; }
+  function getXY(e) {
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX, y: t.clientY };
+  }
+  function onDown(e) {
+    e.preventDefault();
+    const { x, y } = getXY(e);
+    drag = { active: true, startX: x, startY: y,
+             imgX: imgPosState.currentPos.x, imgY: imgPosState.currentPos.y };
+    wrap.classList.add('dragging');
+  }
+  function onMove(e) {
+    if (!drag.active) return;
+    e.preventDefault();
+    const { x, y } = getXY(e);
+    const rect = wrap.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    // Delta in pixels → percentage of wrap size
+    const dx = (x - drag.startX) / rect.width  * 100;
+    const dy = (y - drag.startY) / rect.height * 100;
+    // Pan range (0-100 pct) maps to the actual overflow room available at this zoom.
+    // Less overflow (lower zoom) = less room = same pixel drag covers more pct.
+    const overflow = imgPosState.currentPos.zoom * 100 - 100;
+    const factor = overflow > 0 ? 100 / overflow : 0;
+    const newX = clamp(drag.imgX - dx * factor, 0, 100);
+    const newY = clamp(drag.imgY - dy * factor, 0, 100);
+    imgPosState.currentPos.x = newX;
+    imgPosState.currentPos.y = newY;
+    applyPos();
+  }
+  function onUp() {
+    drag.active = false;
+    wrap.classList.remove('dragging');
+  }
+  function onWheel(e) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.08 : 0.08;
+    setZoom(imgPosState.currentPos.zoom + delta, true);
+  }
+
+  // Attach listeners once — never re-attached, so no leaks or stale-clone bugs.
+  wrap.addEventListener('mousedown',  onDown, { passive: false });
+  wrap.addEventListener('touchstart', onDown, { passive: false });
+  wrap.addEventListener('wheel',      onWheel, { passive: false });
+  document.addEventListener('mousemove', onMove, { passive: false });
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup',   onUp);
+  document.addEventListener('touchend',  onUp);
+  zoomSlider.addEventListener('input', () => setZoom(zoomSlider.value / 100, false));
 
   window.openImgPos = function(url, currentPos, onConfirmCb) {
     imgPosState.url = url;
     imgPosState.onConfirm = onConfirmCb;
-    const pct = parsePct(currentPos);
-    imgPosState.currentPct = { ...pct };
-    imgPosState.selectedPos = pctToCSS(pct);
-
-    const overlay = document.getElementById('imgPosOverlay');
-    const wrap    = document.getElementById('imgPosDragWrap');
-    const imgEl   = document.getElementById('imgPosPreview');
+    const pos = parseImgPos(currentPos);
+    // Ensure at least a little pan room even for legacy values saved without zoom.
+    if (pos.zoom <= 1) pos.zoom = 1.4;
+    imgPosState.currentPos = pos;
     imgEl.src = url;
-    applyPos(imgEl, wrap, pct);
+    zoomSlider.value = Math.round(pos.zoom * 100);
+    applyPos();
     overlay.classList.add('open');
-
-    // Drag handlers
-    function getXY(e) {
-      const t = e.touches ? e.touches[0] : e;
-      return { x: t.clientX, y: t.clientY };
-    }
-    function onDown(e) {
-      e.preventDefault();
-      const { x, y } = getXY(e);
-      drag = { active: true, startX: x, startY: y,
-               imgX: imgPosState.currentPct.x, imgY: imgPosState.currentPct.y };
-      wrap.classList.add('dragging');
-    }
-    function onMove(e) {
-      if (!drag.active) return;
-      e.preventDefault();
-      const { x, y } = getXY(e);
-      const rect = wrap.getBoundingClientRect();
-      // Delta in pixels → percentage of wrap size → scale for panning
-      const dx = (x - drag.startX) / rect.width  * 100;
-      const dy = (y - drag.startY) / rect.height * 100;
-      // Dragging right = moving image right = decreasing pct.x
-      const newX = clamp(drag.imgX - dx * 2.5, 0, 100);
-      const newY = clamp(drag.imgY - dy * 2.5, 0, 100);
-      imgPosState.currentPct = { x: newX, y: newY };
-      imgPosState.selectedPos = pctToCSS(imgPosState.currentPct);
-      applyPos(imgEl, wrap, imgPosState.currentPct);
-    }
-    function onUp() {
-      drag.active = false;
-      wrap.classList.remove('dragging');
-    }
-
-    // Remove old listeners first (re-open scenario)
-    wrap.replaceWith(wrap.cloneNode(true));
-    const freshWrap = document.getElementById('imgPosDragWrap');
-    const freshImg  = document.getElementById('imgPosPreview');
-    freshImg.src = url;
-    applyPos(freshImg, freshWrap, pct);
-
-    freshWrap.addEventListener('mousedown',  onDown,  { passive: false });
-    freshWrap.addEventListener('touchstart', onDown,  { passive: false });
-    document.addEventListener('mousemove',  onMove,  { passive: false });
-    document.addEventListener('touchmove',  onMove,  { passive: false });
-    document.addEventListener('mouseup',    onUp);
-    document.addEventListener('touchend',   onUp);
   };
 
   window.confirmImgPos = function() {
     if (imgPosState.onConfirm) imgPosState.onConfirm(imgPosState.selectedPos);
-    document.getElementById('imgPosOverlay').classList.remove('open');
+    overlay.classList.remove('open');
   };
   window.closeImgPos = function() {
-    document.getElementById('imgPosOverlay').classList.remove('open');
+    overlay.classList.remove('open');
   };
 })();
 
@@ -882,7 +920,7 @@ function cardHTML(item, sec, truncate = false) {
 
   // Cover image
   const coverHTML = item.foto_url
-    ? `<img class="card-img" src="${esc(item.foto_url)}" style="--img-pos:${imgPos}" alt="${esc(item.titulo)}" loading="lazy">`
+    ? `<div class="card-img-wrap"><img class="card-img" src="${esc(item.foto_url)}" style="${imgPosStyleVars(imgPos)}" alt="${esc(item.titulo)}" loading="lazy"></div>`
     : `<div class="card-img-placeholder"></div>`;
 
   // Link button
@@ -938,7 +976,7 @@ function dossierItemHTML(item, idx, total, truncate = false) {
       </a>`
     : '';
   const coverHTML = item.foto_url
-    ? `<img class="dossier-img" src="${esc(item.foto_url)}" style="--img-pos:${imgPos}" alt="${esc(item.titulo)}" loading="lazy">`
+    ? `<div class="dossier-img-wrap"><img class="dossier-img" src="${esc(item.foto_url)}" style="${imgPosStyleVars(imgPos)}" alt="${esc(item.titulo)}" loading="lazy"></div>`
     : '';
 
   // Abstract truncation
@@ -974,7 +1012,7 @@ function circuloHTML(item) {
     ? item.etiquetas.split(',').map((t,i) => `<span class="pill ${pillarColor(i)}">${esc(t.trim())}</span>`).join('')
     : '';
   const coverHTML = item.foto_url
-    ? `<img class="circulo-cover" src="${esc(item.foto_url)}" style="--img-pos:${imgPos}" alt="${esc(item.titulo)}" loading="lazy">`
+    ? `<img class="circulo-cover" src="${esc(item.foto_url)}" style="${imgPosStyleVars(imgPos)}" alt="${esc(item.titulo)}" loading="lazy">`
     : `<div class="circulo-cover-placeholder"></div>`;
   const verPaginaBtn = item.link
     ? `<a class="btn-ver-pagina" href="${esc(normalizeLink(item.link))}" target="_blank" rel="noopener">
