@@ -269,8 +269,8 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 
 
 /* ── CARD IMAGE ── */
-.card-img-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;border-bottom:2px solid var(--gold);margin-bottom:1rem;cursor:pointer;}
-.card-img{width:100%;height:100%;object-fit:cover;object-position:var(--img-pos,center);display:block;transform:scale(var(--img-zoom,1));transform-origin:var(--img-pos,center);}
+.card-img-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;border-bottom:2px solid var(--gold);margin-bottom:1rem;cursor:pointer;}
+.card-img{position:absolute;object-fit:cover;display:block;}
 .card-img-placeholder{width:100%;height:3px;background:var(--gold);display:block;}
 
 /* ── CARD TRUNCATION ── */
@@ -280,11 +280,12 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 .card-truncate-hint{font-size:.78rem;color:var(--faint);font-style:italic;margin-top:.3rem;}
 
 /* ── DOSSIER IMAGE ── */
-.dossier-img-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;border-bottom:2px solid var(--gold);margin-bottom:1rem;cursor:pointer;}
-.dossier-img{width:100%;height:100%;object-fit:cover;object-position:var(--img-pos,center);display:block;transform:scale(var(--img-zoom,1));transform-origin:var(--img-pos,center);}
+.dossier-img-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;border-bottom:2px solid var(--gold);margin-bottom:1rem;cursor:pointer;}
+.dossier-img{position:absolute;object-fit:cover;display:block;}
 
 /* ── CIRCULO IMAGE ── */
-.circulo-cover{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:var(--img-pos,center);display:block;border-bottom:2px solid var(--gold);cursor:pointer;transform:scale(var(--img-zoom,1));transform-origin:var(--img-pos,center);}
+.circulo-cover-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;border-bottom:2px solid var(--gold);cursor:pointer;}
+.circulo-cover{position:absolute;object-fit:cover;display:block;}
 .circulo-cover-placeholder{width:100%;height:3px;background:var(--gold);display:block;}
 .circulo-card{border:1px solid var(--border);position:relative;overflow:hidden;display:flex;flex-direction:column;}
 .circulo-card::before{content:attr(data-initial);position:absolute;top:-.5rem;right:1rem;font-family:'Playfair Display',serif;font-size:5rem;font-weight:700;color:var(--navy);opacity:.04;line-height:1;pointer-events:none;user-select:none;z-index:0;}
@@ -777,9 +778,18 @@ function parseImgPos(stored) {
 function imgPosToCSS(pos) {
   return `${Math.round(pos.x)}% ${Math.round(pos.y)}% ${pos.zoom.toFixed(2)}`;
 }
-function imgPosStyleVars(stored) {
-  const p = parseImgPos(stored);
-  return `--img-pos:${Math.round(p.x)}% ${Math.round(p.y)}%;--img-zoom:${p.zoom}`;
+// Single source of truth for the crop math — used identically by the modal
+// preview AND the final card renderers, so what you see is what you get.
+function computeCrop(pos) {
+  const zoomPct = pos.zoom * 100;
+  const overflow = zoomPct - 100;
+  const tx = overflow > 0 ? Math.min(Math.max(-(pos.x / 100) * overflow, -overflow), 0) : 0;
+  const ty = overflow > 0 ? Math.min(Math.max(-(pos.y / 100) * overflow, -overflow), 0) : 0;
+  return { tx, ty, zoomPct };
+}
+function imgCropStyleAttr(stored) {
+  const { tx, ty, zoomPct } = computeCrop(parseImgPos(stored));
+  return `left:${tx}%;top:${ty}%;width:${zoomPct}%;height:${zoomPct}%;`;
 }
 
 /* ── IMAGE POSITION MODAL — FREE DRAG + ZOOM ── */
@@ -796,13 +806,9 @@ function imgPosStyleVars(stored) {
 
   function applyPos() {
     // imgPosState.currentPos = { x: 0-100, y: 0-100, zoom: >=1 } — 50/50 = center
-    // Image width/height (zoom%) sets how much overflow room exists to pan.
-    const zoomPct = imgPosState.currentPos.zoom * 100;
-    const overflow = zoomPct - 100; // e.g. zoom 1.4 → 40% overflow
+    const { tx, ty, zoomPct } = computeCrop(imgPosState.currentPos);
     imgEl.style.width  = zoomPct + '%';
     imgEl.style.height = zoomPct + '%';
-    const tx = overflow > 0 ? clamp(-(imgPosState.currentPos.x / 100) * overflow, -overflow, 0) : 0;
-    const ty = overflow > 0 ? clamp(-(imgPosState.currentPos.y / 100) * overflow, -overflow, 0) : 0;
     imgEl.style.left = tx + '%';
     imgEl.style.top  = ty + '%';
     imgPosState.selectedPos = imgPosToCSS(imgPosState.currentPos);
@@ -920,7 +926,7 @@ function cardHTML(item, sec, truncate = false) {
 
   // Cover image
   const coverHTML = item.foto_url
-    ? `<div class="card-img-wrap"><img class="card-img" src="${esc(item.foto_url)}" style="${imgPosStyleVars(imgPos)}" alt="${esc(item.titulo)}" loading="lazy"></div>`
+    ? `<div class="card-img-wrap"><img class="card-img" src="${esc(item.foto_url)}" style="${imgCropStyleAttr(imgPos)}" alt="${esc(item.titulo)}" loading="lazy"></div>`
     : `<div class="card-img-placeholder"></div>`;
 
   // Link button
@@ -976,7 +982,7 @@ function dossierItemHTML(item, idx, total, truncate = false) {
       </a>`
     : '';
   const coverHTML = item.foto_url
-    ? `<div class="dossier-img-wrap"><img class="dossier-img" src="${esc(item.foto_url)}" style="${imgPosStyleVars(imgPos)}" alt="${esc(item.titulo)}" loading="lazy"></div>`
+    ? `<div class="dossier-img-wrap"><img class="dossier-img" src="${esc(item.foto_url)}" style="${imgCropStyleAttr(imgPos)}" alt="${esc(item.titulo)}" loading="lazy"></div>`
     : '';
 
   // Abstract truncation
@@ -1012,7 +1018,7 @@ function circuloHTML(item) {
     ? item.etiquetas.split(',').map((t,i) => `<span class="pill ${pillarColor(i)}">${esc(t.trim())}</span>`).join('')
     : '';
   const coverHTML = item.foto_url
-    ? `<img class="circulo-cover" src="${esc(item.foto_url)}" style="${imgPosStyleVars(imgPos)}" alt="${esc(item.titulo)}" loading="lazy">`
+    ? `<div class="circulo-cover-wrap"><img class="circulo-cover" src="${esc(item.foto_url)}" style="${imgCropStyleAttr(imgPos)}" alt="${esc(item.titulo)}" loading="lazy"></div>`
     : `<div class="circulo-cover-placeholder"></div>`;
   const verPaginaBtn = item.link
     ? `<a class="btn-ver-pagina" href="${esc(normalizeLink(item.link))}" target="_blank" rel="noopener">
