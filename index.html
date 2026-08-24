@@ -345,7 +345,7 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
   .nav-links{display:none;}
   .dossier-grid,.circulos-layout{grid-template-columns:1fr;}
   .dossier-item:nth-child(even){border-right:1px solid var(--border);}
-}
+}.site-disclaimer{font-family:'Raleway',sans-serif;font-size:.66rem;line-height:1.4;color:var(--faint);text-align:center;padding:.4rem 1rem;letter-spacing:.01em;}
 </style>
 </head>
 <body>
@@ -418,6 +418,7 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 </div>
 
 <!-- NAV -->
+<div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Universidad ni de la Carrera de Filosofía</div>
 <nav>
   <div class="nav-inner">
     <div class="nav-logo" onclick="showView('home')">Δíκη+ Boletín</div>
@@ -564,6 +565,7 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
       <div class="footer-brand">Δíκη+ Boletín — CEFIL PUCP</div>
       <div>CEFIL · Perú</div>
     </div>
+    <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Universidad ni de la Carrera de Filosofía</div>
   </footer>
 </div>
 
@@ -1104,7 +1106,9 @@ function renderDetailView(sec) {
   <footer><div class="footer-inner">
     <div class="footer-brand">Δíκη+ Boletín — CEFIL PUCP</div>
     <div><span style="cursor:pointer;color:var(--gold);" onclick="showView('home')">← Volver al inicio</span></div>
-  </div></footer>`;
+  </div>
+  <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Universidad ni de la Carrera de Filosofía</div>
+  </footer>`;
 }
 
 function renderAll() {
