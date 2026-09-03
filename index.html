@@ -14,7 +14,7 @@
   --white:#ffffff;
   --text:#1a1a1a; --muted:#5a5a5a; --faint:#8a8a8a;
   --border:rgba(27,45,79,.12); --border-gold:rgba(201,168,76,.3);
-  --green:#2a7a6a; --red:#c0392b;
+  --green:#2a7a6a; --red:#c0392b; --terracotta:#B5603B;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
@@ -346,6 +346,30 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
   .dossier-grid,.circulos-layout{grid-template-columns:1fr;}
   .dossier-item:nth-child(even){border-right:1px solid var(--border);}
 }.site-disclaimer{font-family:'Raleway',sans-serif;font-size:.66rem;line-height:1.4;color:var(--faint);text-align:center;padding:.4rem 1rem;letter-spacing:.01em;}
+
+/* ── EVENTOS: LISTADO CON FECHA DESTACADA ── */
+.eventos-toolbar{display:flex;justify-content:flex-end;margin-bottom:1.5rem;}
+.btn-sort{display:inline-flex;align-items:center;gap:.45rem;padding:.5rem 1.1rem;background:var(--white);border:1px solid var(--border);border-radius:2px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);cursor:pointer;transition:background .15s,border-color .15s;}
+.btn-sort:hover{background:var(--cream-dark);border-color:var(--gold);}
+.btn-sort svg{width:12px;height:12px;flex-shrink:0;transition:transform .2s;}
+.btn-sort.asc svg{transform:rotate(180deg);}
+.eventos-list{display:flex;flex-direction:column;gap:1.1rem;}
+.evento-row{position:relative;display:flex;gap:1.4rem;align-items:flex-start;background:var(--white);border:1px solid var(--border);padding:1.3rem;transition:box-shadow .2s,transform .2s;}
+.evento-row:hover{box-shadow:0 6px 20px rgba(27,45,79,.08);transform:translateY(-2px);}
+.evento-date-badge{flex-shrink:0;width:76px;height:84px;background:var(--cream);border:1px solid var(--border-gold);border-top:4px solid var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:.3rem;}
+.evento-badge-day{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:700;color:var(--navy);line-height:1;}
+.evento-badge-mon{font-size:.66rem;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-top:.3rem;}
+.evento-badge-year{font-size:.63rem;color:var(--faint);margin-top:.1rem;}
+.evento-date-fallback{font-size:.68rem;color:var(--muted);line-height:1.35;}
+.evento-row-body{flex:1;min-width:0;}
+.evento-row-title{font-family:'Playfair Display',serif;font-size:1.12rem;font-weight:600;color:var(--navy);line-height:1.3;margin-bottom:.4rem;}
+.evento-row-desc{font-size:.86rem;color:var(--muted);line-height:1.55;margin-bottom:.7rem;}
+.evento-row-foot{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;}
+.evento-row-img{flex-shrink:0;width:120px;height:84px;overflow:hidden;position:relative;}
+@media(max-width:640px){
+  .evento-row{flex-wrap:wrap;}
+  .evento-row-img{display:none;}
+}
 </style>
 </head>
 <body>
@@ -429,6 +453,7 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
       <li><a onclick="showView('detail-divulgacion')" id="nav-divulgacion">Divulgación</a></li>
       <li><a onclick="showView('detail-dossier')" id="nav-dossier">Dossier</a></li>
       <li><a onclick="showView('detail-circulos')" id="nav-circulos">Círculos</a></li>
+      <li><a onclick="showView('detail-griego')" id="nav-griego">Griego</a></li>
       <li><a onclick="showView('home');setTimeout(()=>document.getElementById('buzon-anchor').scrollIntoView({behavior:'smooth'}),120)">Buzón</a></li>
     </ul>
     <div class="nav-right">
@@ -521,11 +546,27 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
     </div>
   </section>
 
+  <section class="home-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="greek-marker">ιν.</span>
+        <div><div class="section-title">Griego</div><div class="section-divider"></div></div>
+      </div>
+      <p style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:var(--muted);font-style:italic;margin-bottom:2rem;max-width:540px;">Cursos, talleres y recursos para el estudio del griego antiguo.</p>
+      <div class="card-grid" id="home-griego-grid"></div>
+      <div class="empty-state" id="home-griego-empty">Sin contenido aún.</div>
+      <div class="ver-mas-row">
+        <button class="add-item-btn" onclick="openAdd('griego')">+ Agregar recurso</button>
+        <button class="btn-ver-mas" onclick="showView('detail-griego')">Ver todos →</button>
+      </div>
+    </div>
+  </section>
+
   <div id="buzon-anchor"></div>
   <div class="buzon-section">
     <div class="container">
       <div class="section-header">
-        <span class="greek-marker">ιν.</span>
+        <span class="greek-marker">ν.</span>
         <div><div class="section-title">Buzón de Comentarios</div><div class="section-divider" style="background:var(--gold);"></div></div>
       </div>
       <p class="buzon-intro">Comparte ideas, sugerencias o señalamientos de manera anónima.</p>
@@ -575,6 +616,7 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 <div id="view-detail-divulgacion" class="view"></div>
 <div id="view-detail-dossier" class="view"></div>
 <div id="view-detail-circulos" class="view"></div>
+<div id="view-detail-griego" class="view"></div>
 
 <!-- ══ SUPABASE SCRIPT ══ -->
 <script type="module">
@@ -688,10 +730,10 @@ window.showView = (name) => {
 };
 
 /* ── ALMACÉN EN MEMORIA (se llena desde Supabase) ── */
-const store = { eventos: [], oportunidades: [], divulgacion: [], dossier: [], circulos: [] };
+const store = { eventos: [], oportunidades: [], divulgacion: [], dossier: [], circulos: [], griego: [] };
 
 /* ── CARGA DE DATOS DESDE SUPABASE (con tiempo real) ── */
-const COLLECTIONS = ['eventos','oportunidades','divulgacion','dossier','circulos'];
+const COLLECTIONS = ['eventos','oportunidades','divulgacion','dossier','circulos','griego'];
 
 // Trae los registros de una sección y los guarda en el store.
 async function fetchSection(sec) {
@@ -915,7 +957,7 @@ function truncateWords(text, max) {
 function esc(s) {
   return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
 }
-const topColors = { eventos:'var(--navy)', oportunidades:'var(--gold)', divulgacion:'var(--green)' };
+const topColors = { eventos:'var(--navy)', oportunidades:'var(--gold)', divulgacion:'var(--green)', griego:'var(--terracotta)' };
 function pillarColor(i) { return ['pill-outline','pill-navy','pill-gold'][i % 3]; }
 
 /* ── RENDERERS ── */
@@ -1052,9 +1094,86 @@ function skeletonCards(n) {
   return Array(n).fill('<div class="card skeleton skel-card"></div>').join('');
 }
 
+/* ── EVENTOS: LISTADO CON FECHA DESTACADA ── */
+const MESES_ES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+const MESES_ES_FULL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+// Interpreta el texto libre de "fecha" (ej. "15 de marzo, 2025") para armar el
+// recuadro de fecha. Si no logra reconocer día+mes, se muestra el texto tal cual.
+function findMonthIndex(sLower) {
+  for (let i = 0; i < MESES_ES_FULL.length; i++) if (sLower.includes(MESES_ES_FULL[i])) return i;
+  if (sLower.includes('setiembre')) return 8;
+  for (let i = 0; i < MESES_ABBR.length; i++) if (new RegExp('\\b' + MESES_ABBR[i]).test(sLower)) return i;
+  return -1;
+}
+function parseFechaBadge(fecha) {
+  if (!fecha) return { day: '', mon: '', year: '', valid: false };
+  const raw = String(fecha).toLowerCase();
+  const yearMatch = raw.match(/(19|20)\d{2}/);
+  const year = yearMatch ? yearMatch[0] : '';
+  const withoutYear = year ? raw.replace(year, ' ') : raw;
+  const dayMatch = withoutYear.match(/\b([0-3]?\d)\b/);
+  const day = dayMatch ? String(parseInt(dayMatch[1], 10)) : '';
+  const mi = findMonthIndex(raw);
+  const mon = mi >= 0 ? MESES_ES[mi] : '';
+  return { day, mon, year, valid: !!(day && mon) };
+}
+function fechaSortValue(fecha) {
+  const { day, mon, year } = parseFechaBadge(fecha);
+  const mi = MESES_ES.indexOf(mon);
+  if (day && mi >= 0 && year) return new Date(parseInt(year, 10), mi, parseInt(day, 10)).getTime();
+  return null; // fecha no reconocible — se ordena al final, sin importar la dirección
+}
+let eventosSortDir = 'desc'; // 'desc' = más recientes primero, 'asc' = más antiguos primero
+window.toggleEventosSort = function() {
+  eventosSortDir = eventosSortDir === 'desc' ? 'asc' : 'desc';
+  renderDetailView('eventos');
+};
+function sortedEventos(data) {
+  const withKey = data.map(i => ({ item: i, t: fechaSortValue(i.fecha) }));
+  withKey.sort((a, b) => {
+    if (a.t === null && b.t === null) return 0;
+    if (a.t === null) return 1;
+    if (b.t === null) return -1;
+    return eventosSortDir === 'desc' ? b.t - a.t : a.t - b.t;
+  });
+  return withKey.map(w => w.item);
+}
+function eventoRowHTML(item) {
+  const b = parseFechaBadge(item.fecha);
+  const badgeInner = b.valid
+    ? `<div class="evento-badge-day">${b.day}</div><div class="evento-badge-mon">${b.mon}</div>${b.year ? `<div class="evento-badge-year">${b.year}</div>` : ''}`
+    : `<div class="evento-date-fallback">${esc(item.fecha || '')}</div>`;
+  const linkBtn = item.link
+    ? `<a class="btn-link-item" href="${esc(normalizeLink(item.link))}" target="_blank" rel="noopener">
+        Link <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:10px;height:10px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>`
+    : '';
+  const thumbHTML = item.foto_url
+    ? `<div class="evento-row-img"><img src="${esc(item.foto_url)}" style="position:absolute;object-fit:cover;${imgCropStyleAttr(item.img_pos || 'center')}" alt="${esc(item.titulo)}" loading="lazy"></div>`
+    : '';
+  return `<div class="evento-row editable-card">
+    <div class="edit-actions">
+      <button class="btn-edit-item" onclick="openEdit('eventos','${item._id}')">Editar</button>
+      <button class="btn-delete-item" onclick="deleteItem('eventos','${item._id}')">Eliminar</button>
+    </div>
+    <div class="evento-date-badge">${badgeInner}</div>
+    <div class="evento-row-body">
+      <div class="evento-row-title">${esc(item.titulo)}</div>
+      ${item.descripcion ? `<div class="evento-row-desc">${esc(item.descripcion)}</div>` : ''}
+      <div class="evento-row-foot">
+        ${item.etiqueta ? `<div class="card-tag" style="margin-top:0;">${esc(item.etiqueta)}</div>` : ''}
+        ${linkBtn}
+      </div>
+    </div>
+    ${thumbHTML}
+  </div>`;
+}
+
 /* ── RENDER HOME ── */
 function renderHome() {
-  ['eventos','oportunidades','divulgacion'].forEach(sec => {
+  ['eventos','oportunidades','divulgacion','griego'].forEach(sec => {
     const data = store[sec];
     const g = document.getElementById('home-' + sec + '-grid');
     if (g) g.innerHTML = data.slice(0, 2).map(i => cardHTML(i, sec, true)).join('') || '';
@@ -1079,9 +1198,10 @@ const DETAIL_META = {
   oportunidades:{ title:'Internacionalización y Oportunidades Académicas', sub:'Becas, programas de posgrado e intercambios' },
   divulgacion:  { title:'Divulgación Filosófica', sub:'Publicaciones recientes, debates y entrevistas de la comunidad PUCP' },
   dossier:      { title:'Dossier', sub:'Textos de seminarios, cursos obligatorios y electivos' },
-  circulos:     { title:'Círculos de Lectura & Grupos de Investigación', sub:'Actividades, horarios y convocatorias abiertas' }
+  circulos:     { title:'Círculos de Lectura & Grupos de Investigación', sub:'Actividades, horarios y convocatorias abiertas' },
+  griego:       { title:'Griego', sub:'Cursos, talleres y recursos para el estudio del griego antiguo' }
 };
-const ADD_LABELS = { eventos:'evento', oportunidades:'oportunidad', divulgacion:'publicación', dossier:'texto', circulos:'grupo' };
+const ADD_LABELS = { eventos:'evento', oportunidades:'oportunidad', divulgacion:'publicación', dossier:'texto', circulos:'grupo', griego:'recurso' };
 
 function renderDetailView(sec) {
   const container = document.getElementById('view-detail-' + sec);
@@ -1091,6 +1211,17 @@ function renderDetailView(sec) {
   let itemsHTML = '';
   if (sec === 'dossier')  itemsHTML = `<div class="dossier-grid">${data.map((i,idx) => dossierItemHTML(i, idx, data.length)).join('')}</div>`;
   else if (sec === 'circulos') itemsHTML = `<div class="circulos-layout">${data.map(i => circuloHTML(i)).join('')}</div>`;
+  else if (sec === 'eventos') {
+    const sorted = sortedEventos(data);
+    itemsHTML = `
+    <div class="eventos-toolbar">
+      <button class="btn-sort ${eventosSortDir === 'asc' ? 'asc' : 'desc'}" onclick="toggleEventosSort()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        ${eventosSortDir === 'desc' ? 'Más recientes primero' : 'Más antiguos primero'}
+      </button>
+    </div>
+    <div class="eventos-list">${sorted.map(i => eventoRowHTML(i)).join('')}</div>`;
+  }
   else itemsHTML = `<div class="card-grid">${data.map(i => cardHTML(i, sec)).join('')}</div>`;
   const emptyBlock = data.length === 0 ? `<div class="empty-state" style="display:block;">No hay elementos aún.</div>` : '';
   container.innerHTML = `
@@ -1135,7 +1266,8 @@ const FIELDS = {
   oportunidades:[{k:'fecha',l:'Fecha / Período'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Beca)'},{k:'link',l:'Link (botón "Link")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
   divulgacion:  [{k:'fecha',l:'Fecha / Tipo'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Publicación)'},{k:'link',l:'Link (botón "Link")'},{k:'pdf',l:'Archivo PDF (opcional)',type:'file'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
   dossier:      [{k:'tipo',l:'Tipo',type:'select',opts:['Seminario','Curso Obligatorio','Electivo','Tesis','Otro']},{k:'titulo',l:'Título del texto'},{k:'meta',l:'Metadatos (Curso · Profesor · Período)'},{k:'abstract',l:'Resumen / Abstract',type:'textarea'},{k:'link',l:'Link (botón "Link")'},{k:'pdf',l:'Archivo PDF',type:'file'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
-  circulos:     [{k:'tipo',l:'Tipo',type:'select',opts:['Círculo de Lectura','Grupo de Investigación']},{k:'titulo',l:'Nombre'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiquetas',l:'Etiquetas (separadas por coma)'},{k:'horario',l:'Horario y lugar'},{k:'link',l:'Link (botón "Ver página")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}]
+  circulos:     [{k:'tipo',l:'Tipo',type:'select',opts:['Círculo de Lectura','Grupo de Investigación']},{k:'titulo',l:'Nombre'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiquetas',l:'Etiquetas (separadas por coma)'},{k:'horario',l:'Horario y lugar'},{k:'link',l:'Link (botón "Ver página")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
+  griego:       [{k:'fecha',l:'Fecha / Período'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Curso, Taller)'},{k:'link',l:'Link (botón "Link")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}]
 };
 
 let modalState = null;
