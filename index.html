@@ -31,6 +31,12 @@ nav{position:sticky;top:0;z-index:200;background:var(--navy);border-bottom:2px s
 .nav-links{display:flex;gap:0;list-style:none;}
 .nav-links a{display:block;padding:0 .85rem;height:60px;line-height:60px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.75rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;transition:color .2s,background .2s;cursor:pointer;}
 .nav-links a:hover,.nav-links a.active-link{color:var(--gold);background:rgba(255,255,255,.04);}
+.nav-has-dropdown{position:relative;}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;min-width:200px;background:var(--navy-light);border:1px solid rgba(255,255,255,.12);border-top:2px solid var(--gold);box-shadow:0 10px 26px rgba(0,0,0,.28);z-index:210;padding:.3rem 0;}
+.nav-has-dropdown:hover .nav-dropdown,.nav-has-dropdown:focus-within .nav-dropdown{display:block;}
+.nav-dropdown a{display:block;padding:.6rem 1.1rem;height:auto;line-height:1.3;font-size:.7rem;letter-spacing:.04em;text-transform:none;color:rgba(255,255,255,.85);white-space:nowrap;}
+.nav-dropdown a:hover{color:var(--gold);background:rgba(255,255,255,.06);}
+.nav-dropdown-empty{padding:.6rem 1.1rem;font-size:.68rem;color:rgba(255,255,255,.4);font-style:italic;white-space:nowrap;}
 .nav-right{display:flex;align-items:center;gap:.8rem;}
 #loginBtn{padding:.35rem .9rem;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.7);background:transparent;cursor:pointer;border-radius:2px;transition:border-color .2s,color .2s;}
 #loginBtn:hover{border-color:var(--gold);color:var(--gold);}
@@ -255,6 +261,22 @@ section.home-section:nth-child(even){background:var(--white);}
 .btn-submit:hover{background:var(--gold-light);transform:translateY(-1px);}
 .buzon-success{display:none;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);padding:1.5rem 2rem;max-width:600px;color:var(--gold-light);font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;}
 
+/* ── BUZÓN: DOS COLUMNAS (SUSCRIPCIÓN + COMENTARIOS) ── */
+.buzon-columns{display:flex;gap:3.5rem;flex-wrap:wrap;align-items:flex-start;}
+.buzon-col{flex:1 1 320px;min-width:0;}
+.newsletter-box{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:2.5rem;}
+.newsletter-title{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:600;color:#fff;margin-bottom:.7rem;}
+.newsletter-text{font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:rgba(255,255,255,.6);font-style:italic;line-height:1.65;margin-bottom:1.7rem;}
+.newsletter-form{display:flex;gap:.6rem;flex-wrap:wrap;}
+.newsletter-input{flex:1;min-width:170px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:#fff;padding:.7rem 1rem;font-family:'Inter',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s;}
+.newsletter-input::placeholder{color:rgba(255,255,255,.32);}
+.newsletter-input:focus{border-color:var(--gold);}
+.btn-subscribe{padding:.7rem 1.5rem;background:var(--gold);color:var(--navy);font-family:'Inter',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;white-space:nowrap;transition:background .2s;}
+.btn-subscribe:hover{background:var(--gold-light);}
+.newsletter-success{display:none;margin-top:1.1rem;color:var(--gold-light);font-size:.85rem;font-style:italic;}
+.newsletter-note{font-size:.7rem;color:rgba(255,255,255,.3);margin-top:.9rem;}
+@media(max-width:760px){.buzon-columns{flex-direction:column;}}
+
 /* ── EMPTY / SKELETON ── */
 .empty-state{font-size:.85rem;color:var(--faint);font-style:italic;padding:1.5rem;border:1px dashed var(--border);text-align:center;display:none;}
 body.editing .empty-state{display:block;}
@@ -453,7 +475,10 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
       <li><a onclick="showView('detail-divulgacion')" id="nav-divulgacion">Divulgación</a></li>
       <li><a onclick="showView('detail-dossier')" id="nav-dossier">Dossier</a></li>
       <li><a onclick="showView('detail-circulos')" id="nav-circulos">Círculos</a></li>
-      <li><a onclick="showView('detail-griego')" id="nav-griego">Griego</a></li>
+      <li class="nav-has-dropdown">
+        <a onclick="showView('detail-griego')" id="nav-griego">Recursos</a>
+        <div class="nav-dropdown" id="nav-griego-dropdown"></div>
+      </li>
       <li><a onclick="showView('home');setTimeout(()=>document.getElementById('buzon-anchor').scrollIntoView({behavior:'smooth'}),120)">Buzón</a></li>
     </ul>
     <div class="nav-right">
@@ -550,13 +575,14 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
     <div class="container">
       <div class="section-header">
         <span class="greek-marker">ιν.</span>
-        <div><div class="section-title">Griego</div><div class="section-divider"></div></div>
+        <div><div class="section-title">Recursos</div><div class="section-divider"></div></div>
       </div>
-      <p style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:var(--muted);font-style:italic;margin-bottom:2rem;max-width:540px;">Cursos, talleres y recursos para el estudio del griego antiguo.</p>
+      <p style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:var(--muted);font-style:italic;margin-bottom:2rem;max-width:540px;">Cursos y materiales para tus estudios filosóficos.</p>
       <div class="card-grid" id="home-griego-grid"></div>
       <div class="empty-state" id="home-griego-empty">Sin contenido aún.</div>
       <div class="ver-mas-row">
         <button class="add-item-btn" onclick="openAdd('griego')">+ Agregar recurso</button>
+        <button class="add-item-btn" onclick="openAddDivision()">+ Agregar división</button>
         <button class="btn-ver-mas" onclick="showView('detail-griego')">Ver todos →</button>
       </div>
     </div>
@@ -569,6 +595,20 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
         <span class="greek-marker">ν.</span>
         <div><div class="section-title">Buzón de Comentarios</div><div class="section-divider" style="background:var(--gold);"></div></div>
       </div>
+      <div class="buzon-columns">
+        <div class="buzon-col">
+          <div class="newsletter-box">
+            <div class="newsletter-title">¿Quieres seguir enterándote?</div>
+            <div class="newsletter-text">Suscríbete y te avisamos por correo cada vez que publiquemos contenido nuevo en Δίκη+.</div>
+            <div class="newsletter-form" id="newsletterForm">
+              <input class="newsletter-input" type="email" id="newsletterEmail" placeholder="tu correo electrónico">
+              <button class="btn-subscribe" onclick="suscribirse()">Suscribirme</button>
+            </div>
+            <div class="newsletter-success" id="newsletterSuccess">✓ &nbsp; Listo, te avisaremos de las novedades.</div>
+            <div class="newsletter-note">Solo lo usamos para avisos del boletín. Nada de spam.</div>
+          </div>
+        </div>
+        <div class="buzon-col">
       <p class="buzon-intro">Comparte ideas, sugerencias o señalamientos de manera anónima.</p>
       <div class="buzon-form" id="buzonForm">
         <div class="anon-note">
@@ -598,6 +638,8 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
         <button class="btn-submit" onclick="enviarBuzon()">Enviar comentario</button>
       </div>
       <div class="buzon-success" id="buzonSuccess">✓ &nbsp; Tu comentario ha sido recibido. Gracias por contribuir a Δίκη+.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -617,6 +659,7 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 <div id="view-detail-dossier" class="view"></div>
 <div id="view-detail-circulos" class="view"></div>
 <div id="view-detail-griego" class="view"></div>
+<div id="view-division" class="view"></div>
 
 <!-- ══ SUPABASE SCRIPT ══ -->
 <script type="module">
@@ -718,22 +761,28 @@ window.showToast = showToast;
 
 /* ── SPA ROUTING ── */
 let currentView = 'home';
+let currentDivision = null;
 window.showView = (name) => {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-' + name)?.classList.add('active');
+  const containerId = name.startsWith('division-') ? 'view-division' : 'view-' + name;
+  document.getElementById(containerId)?.classList.add('active');
   document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active-link'));
-  const navId = 'nav-' + (name === 'home' ? 'home' : name.replace('detail-', ''));
+  const navId = name.startsWith('division-') ? 'nav-griego' : 'nav-' + (name === 'home' ? 'home' : name.replace('detail-', ''));
   document.getElementById(navId)?.classList.add('active-link');
   currentView = name;
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (name.startsWith('detail-')) renderDetailView(name.replace('detail-', ''));
+  else if (name.startsWith('division-')) {
+    currentDivision = decodeURIComponent(name.replace('division-', ''));
+    renderDivisionView(currentDivision);
+  }
 };
 
 /* ── ALMACÉN EN MEMORIA (se llena desde Supabase) ── */
-const store = { eventos: [], oportunidades: [], divulgacion: [], dossier: [], circulos: [], griego: [] };
+const store = { eventos: [], oportunidades: [], divulgacion: [], dossier: [], circulos: [], griego: [], recursos_div: [] };
 
 /* ── CARGA DE DATOS DESDE SUPABASE (con tiempo real) ── */
-const COLLECTIONS = ['eventos','oportunidades','divulgacion','dossier','circulos','griego'];
+const COLLECTIONS = ['eventos','oportunidades','divulgacion','dossier','circulos','griego','recursos_div'];
 
 // Trae los registros de una sección y los guarda en el store.
 async function fetchSection(sec) {
@@ -1173,13 +1222,20 @@ function eventoRowHTML(item) {
 
 /* ── RENDER HOME ── */
 function renderHome() {
-  ['eventos','oportunidades','divulgacion','griego'].forEach(sec => {
+  ['eventos','oportunidades','divulgacion'].forEach(sec => {
     const data = store[sec];
     const g = document.getElementById('home-' + sec + '-grid');
     if (g) g.innerHTML = data.slice(0, 2).map(i => cardHTML(i, sec, true)).join('') || '';
     const emp = document.getElementById('home-' + sec + '-empty');
     if (emp) emp.style.display = data.length === 0 ? 'block' : 'none';
   });
+  // Recursos: solo los ítems sin división asignada aparecen en el apartado general.
+  const recursosGeneral = store['griego'].filter(i => !i.division);
+  const rg = document.getElementById('home-griego-grid');
+  if (rg) rg.innerHTML = recursosGeneral.slice(0, 2).map(i => cardHTML(i, 'griego', true)).join('') || '';
+  const remp = document.getElementById('home-griego-empty');
+  if (remp) remp.style.display = recursosGeneral.length === 0 ? 'block' : 'none';
+  renderRecursosDropdown();
   const dos = store['dossier'];
   const dg = document.getElementById('home-dossier-grid');
   if (dg) dg.innerHTML = dos.slice(0, 2).map((i, idx) => dossierItemHTML(i, idx, Math.min(dos.length, 2), true)).join('');
@@ -1192,6 +1248,19 @@ function renderHome() {
   if (ce) ce.style.display = circ.length === 0 ? 'block' : 'none';
 }
 
+// Llena el menú desplegable de "Recursos" con las divisiones creadas por los editores.
+function renderRecursosDropdown() {
+  const dd = document.getElementById('nav-griego-dropdown');
+  if (!dd) return;
+  const divisiones = store['recursos_div'];
+  dd.innerHTML = divisiones.length
+    ? divisiones.map(d => `<a data-division="${esc(d.titulo)}">${esc(d.titulo)}</a>`).join('')
+    : `<div class="nav-dropdown-empty">Sin divisiones aún</div>`;
+  dd.querySelectorAll('a[data-division]').forEach(a => {
+    a.addEventListener('click', () => showView('division-' + encodeURIComponent(a.getAttribute('data-division'))));
+  });
+}
+
 /* ── RENDER DETAIL ── */
 const DETAIL_META = {
   eventos:      { title:'Eventos Académicos', sub:'Workshops, congresos, coloquios y jornadas filosóficas' },
@@ -1199,15 +1268,15 @@ const DETAIL_META = {
   divulgacion:  { title:'Divulgación Filosófica', sub:'Publicaciones recientes, debates y entrevistas de la comunidad PUCP' },
   dossier:      { title:'Dossier', sub:'Textos de seminarios, cursos obligatorios y electivos' },
   circulos:     { title:'Círculos de Lectura & Grupos de Investigación', sub:'Actividades, horarios y convocatorias abiertas' },
-  griego:       { title:'Griego', sub:'Cursos, talleres y recursos para el estudio del griego antiguo' }
+  griego:       { title:'Recursos', sub:'Cursos y materiales para tus estudios filosóficos' }
 };
-const ADD_LABELS = { eventos:'evento', oportunidades:'oportunidad', divulgacion:'publicación', dossier:'texto', circulos:'grupo', griego:'recurso' };
+const ADD_LABELS = { eventos:'evento', oportunidades:'oportunidad', divulgacion:'publicación', dossier:'texto', circulos:'grupo', griego:'recurso', recursos_div:'división' };
 
 function renderDetailView(sec) {
   const container = document.getElementById('view-detail-' + sec);
   if (!container) return;
   const meta = DETAIL_META[sec];
-  const data = store[sec];
+  const data = sec === 'griego' ? store[sec].filter(i => !i.division) : store[sec];
   let itemsHTML = '';
   if (sec === 'dossier')  itemsHTML = `<div class="dossier-grid">${data.map((i,idx) => dossierItemHTML(i, idx, data.length)).join('')}</div>`;
   else if (sec === 'circulos') itemsHTML = `<div class="circulos-layout">${data.map(i => circuloHTML(i)).join('')}</div>`;
@@ -1224,6 +1293,7 @@ function renderDetailView(sec) {
   }
   else itemsHTML = `<div class="card-grid">${data.map(i => cardHTML(i, sec)).join('')}</div>`;
   const emptyBlock = data.length === 0 ? `<div class="empty-state" style="display:block;">No hay elementos aún.</div>` : '';
+  const divisionBtn = sec === 'griego' ? `<button class="add-item-btn" style="margin-top:2rem;" onclick="openAddDivision()">+ Agregar división</button>` : '';
   container.innerHTML = `
   <div class="detail-hero"><div class="container">
     <div class="detail-breadcrumb"><span onclick="showView('home')">← Volver al inicio</span></div>
@@ -1233,6 +1303,36 @@ function renderDetailView(sec) {
   <div class="detail-body"><div class="container">
     ${itemsHTML}${emptyBlock}
     <button class="add-item-btn" style="margin-top:2rem;" onclick="openAdd('${sec}')">+ Agregar ${ADD_LABELS[sec]}</button>
+    ${divisionBtn}
+  </div></div>
+  <footer><div class="footer-inner">
+    <div class="footer-brand">Δíκη+ Boletín — CEFIL PUCP</div>
+    <div><span style="cursor:pointer;color:var(--gold);" onclick="showView('home')">← Volver al inicio</span></div>
+  </div>
+  <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Universidad ni de la Carrera de Filosofía</div>
+  </footer>`;
+}
+
+// Página interna de una división de Recursos — mismo formato visual que las
+// secciones de la página de Inicio (marcador griego, título, grid de tarjetas).
+function renderDivisionView(divName) {
+  const container = document.getElementById('view-division');
+  if (!container) return;
+  const items = store['griego'].filter(i => i.division === divName);
+  const exists = store['recursos_div'].some(d => d.titulo === divName);
+  const itemsHTML = `<div class="card-grid">${items.map(i => cardHTML(i, 'griego')).join('')}</div>`;
+  const emptyBlock = items.length === 0
+    ? `<div class="empty-state" style="display:block;">${exists ? 'Sin recursos en esta división aún.' : 'Esta división ya no existe.'}</div>`
+    : '';
+  container.innerHTML = `
+  <div class="detail-hero"><div class="container">
+    <div class="detail-breadcrumb"><span onclick="showView('detail-griego')">← Volver a Recursos</span></div>
+    <div class="detail-hero-title">${esc(divName)}</div>
+    <div class="detail-hero-sub">División de Recursos</div>
+  </div></div>
+  <div class="detail-body"><div class="container">
+    ${itemsHTML}${emptyBlock}
+    <button class="add-item-btn" style="margin-top:2rem;" onclick="openAdd('griego', {division:'${esc(divName).replace(/'/g,"\\'")}'})">+ Agregar recurso a esta división</button>
   </div></div>
   <footer><div class="footer-inner">
     <div class="footer-brand">Δíκη+ Boletín — CEFIL PUCP</div>
@@ -1245,6 +1345,7 @@ function renderDetailView(sec) {
 function renderAll() {
   renderHome();
   if (currentView.startsWith('detail-')) renderDetailView(currentView.replace('detail-', ''));
+  else if (currentView.startsWith('division-') && currentDivision) renderDivisionView(currentDivision);
 }
 
 /* ── EDIT MODE ── */
@@ -1267,7 +1368,8 @@ const FIELDS = {
   divulgacion:  [{k:'fecha',l:'Fecha / Tipo'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Publicación)'},{k:'link',l:'Link (botón "Link")'},{k:'pdf',l:'Archivo PDF (opcional)',type:'file'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
   dossier:      [{k:'tipo',l:'Tipo',type:'select',opts:['Seminario','Curso Obligatorio','Electivo','Tesis','Otro']},{k:'titulo',l:'Título del texto'},{k:'meta',l:'Metadatos (Curso · Profesor · Período)'},{k:'abstract',l:'Resumen / Abstract',type:'textarea'},{k:'link',l:'Link (botón "Link")'},{k:'pdf',l:'Archivo PDF',type:'file'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
   circulos:     [{k:'tipo',l:'Tipo',type:'select',opts:['Círculo de Lectura','Grupo de Investigación']},{k:'titulo',l:'Nombre'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiquetas',l:'Etiquetas (separadas por coma)'},{k:'horario',l:'Horario y lugar'},{k:'link',l:'Link (botón "Ver página")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
-  griego:       [{k:'fecha',l:'Fecha / Período'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Curso, Taller)'},{k:'link',l:'Link (botón "Link")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}]
+  griego:       [{k:'fecha',l:'Fecha / Período'},{k:'titulo',l:'Título'},{k:'descripcion',l:'Descripción',type:'textarea'},{k:'etiqueta',l:'Etiqueta (ej. Curso, Taller)'},{k:'division',l:'División (opcional)',type:'select-dynamic',source:'recursos_div'},{k:'link',l:'Link (botón "Link")'},{k:'foto',l:'Foto de portada (16:9)',type:'foto'}],
+  recursos_div: [{k:'titulo',l:'Nombre de la división'}]
 };
 
 let modalState = null;
@@ -1281,6 +1383,13 @@ function buildFields(sec, item) {
     if (f.type === 'textarea') return `<div class="mfield"><label>${f.l}</label><textarea id="mf_${f.k}" rows="4">${val}</textarea></div>`;
     if (f.type === 'select') {
       const opts = f.opts.map(o => `<option${o===val?' selected':''}>${o}</option>`).join('');
+      return `<div class="mfield"><label>${f.l}</label><select id="mf_${f.k}">${opts}</select></div>`;
+    }
+    if (f.type === 'select-dynamic') {
+      const source = (store[f.source] || []).map(r => r.titulo);
+      const opts = ['<option value="">— Sin división —</option>']
+        .concat(source.map(o => `<option${o===val?' selected':''}>${esc(o)}</option>`))
+        .join('');
       return `<div class="mfield"><label>${f.l}</label><select id="mf_${f.k}">${opts}</select></div>`;
     }
     if (f.type === 'file') {
@@ -1316,12 +1425,18 @@ window.openEdit = (sec, id) => {
   document.getElementById('modal-overlay').classList.add('open');
 };
 
-window.openAdd = (sec) => {
+window.openAdd = (sec, presetValues) => {
   if (!isLoggedIn) { openAuth(); return; }
   modalState = { sec, id: null };
   pendingFile = null; pendingFoto = null;
   document.getElementById('modal-title').textContent = 'Agregar ' + ADD_LABELS[sec];
   document.getElementById('modal-fields').innerHTML = buildFields(sec, null);
+  if (presetValues) {
+    Object.keys(presetValues).forEach(k => {
+      const el = document.getElementById('mf_' + k);
+      if (el) el.value = presetValues[k];
+    });
+  }
   if (sec === 'dossier' || sec === 'divulgacion') document.getElementById('mf_pdf')?.addEventListener('change', e => { pendingFile = e.target.files[0] || null; });
   document.getElementById('mf_foto')?.addEventListener('change', e => {
     const f = e.target.files[0];
@@ -1332,6 +1447,9 @@ window.openAdd = (sec) => {
   });
   document.getElementById('modal-overlay').classList.add('open');
 };
+
+// Atajo para crear una nueva división dentro de Recursos (reutiliza el modal genérico).
+window.openAddDivision = () => openAdd('recursos_div');
 
 window.closeModal = () => {
   document.getElementById('modal-overlay').classList.remove('open');
@@ -1426,6 +1544,25 @@ window.enviarBuzon = async () => {
     document.getElementById('buzonSuccess').style.display = 'block';
   } catch (err) {
     showToast('Error al enviar: ' + err.message, true);
+  }
+};
+
+/* ── SUSCRIPCIÓN AL BOLETÍN ── */
+window.suscribirse = async () => {
+  const input = document.getElementById('newsletterEmail');
+  const email = input.value.trim();
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(email)) { showToast('Ingresa un correo válido', true); return; }
+  try {
+    const { error } = await supabase.from('suscriptores').insert({ email });
+    if (error) {
+      if (error.code === '23505') { showToast('Ese correo ya está suscrito', true); return; }
+      throw error;
+    }
+    document.getElementById('newsletterForm').style.display = 'none';
+    document.getElementById('newsletterSuccess').style.display = 'block';
+  } catch (err) {
+    showToast('Error al suscribirte: ' + err.message, true);
   }
 };
 
