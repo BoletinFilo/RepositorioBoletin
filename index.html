@@ -368,6 +368,8 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
   .dossier-grid,.circulos-layout{grid-template-columns:1fr;}
   .dossier-item:nth-child(even){border-right:1px solid var(--border);}
 }.site-disclaimer{font-family:'Raleway',sans-serif;font-size:.66rem;line-height:1.4;color:var(--faint);text-align:center;padding:.4rem 1rem;letter-spacing:.01em;}
+.recursos-subsection{margin-bottom:3.2rem;}
+.recursos-subsection:last-child{margin-bottom:0;}
 
 /* ── EVENTOS: LISTADO CON FECHA DESTACADA ── */
 .eventos-toolbar{display:flex;justify-content:flex-end;margin-bottom:1.5rem;}
@@ -464,7 +466,7 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
 </div>
 
 <!-- NAV -->
-<div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Universidad ni de la Carrera de Filosofía</div>
+<div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Pontificia Universidad Católica del Perú ni de la Carrera de Filosofía de esta</div>
 <nav>
   <div class="nav-inner">
     <div class="nav-logo" onclick="showView('home')">Δíκη+ Boletín</div>
@@ -648,7 +650,7 @@ footer{background:#0f1d35;color:rgba(255,255,255,.4);padding:2.5rem 2rem;font-si
       <div class="footer-brand">Δíκη+ Boletín — CEFIL PUCP</div>
       <div>CEFIL · Perú</div>
     </div>
-    <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Universidad ni de la Carrera de Filosofía</div>
+    <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Pontificia Universidad Católica del Perú ni de la Carrera de Filosofía de esta</div>
   </footer>
 </div>
 
@@ -1276,7 +1278,7 @@ function renderDetailView(sec) {
   const container = document.getElementById('view-detail-' + sec);
   if (!container) return;
   const meta = DETAIL_META[sec];
-  const data = sec === 'griego' ? store[sec].filter(i => !i.division) : store[sec];
+  const data = store[sec];
   let itemsHTML = '';
   if (sec === 'dossier')  itemsHTML = `<div class="dossier-grid">${data.map((i,idx) => dossierItemHTML(i, idx, data.length)).join('')}</div>`;
   else if (sec === 'circulos') itemsHTML = `<div class="circulos-layout">${data.map(i => circuloHTML(i)).join('')}</div>`;
@@ -1291,6 +1293,31 @@ function renderDetailView(sec) {
     </div>
     <div class="eventos-list">${sorted.map(i => eventoRowHTML(i)).join('')}</div>`;
   }
+  else if (sec === 'griego') {
+    // Recursos: se muestran TODOS los ítems en la página general, agrupados
+    // por división con el mismo formato visual que las secciones de Inicio.
+    const general = data.filter(i => !i.division);
+    const divisiones = store['recursos_div'];
+    const generalHTML = `
+      <div class="recursos-subsection">
+        ${divisiones.length ? `<div class="section-title" style="font-size:1.3rem;">General</div><div class="section-divider" style="margin-bottom:1.6rem;"></div>` : ''}
+        ${general.length
+          ? `<div class="card-grid">${general.map(i => cardHTML(i, 'griego')).join('')}</div>`
+          : (divisiones.length ? `<div class="empty-state" style="display:block;">Sin recursos generales aún.</div>` : '')}
+      </div>`;
+    const gruposHTML = divisiones.map(d => {
+      const items = data.filter(i => i.division === d.titulo);
+      return `
+      <div class="recursos-subsection">
+        <div class="section-title" style="font-size:1.3rem;">${esc(d.titulo)}</div>
+        <div class="section-divider" style="margin-bottom:1.6rem;"></div>
+        ${items.length
+          ? `<div class="card-grid">${items.map(i => cardHTML(i, 'griego')).join('')}</div>`
+          : `<div class="empty-state" style="display:block;">Sin recursos aún en esta división.</div>`}
+      </div>`;
+    }).join('');
+    itemsHTML = generalHTML + gruposHTML;
+  }
   else itemsHTML = `<div class="card-grid">${data.map(i => cardHTML(i, sec)).join('')}</div>`;
   const emptyBlock = data.length === 0 ? `<div class="empty-state" style="display:block;">No hay elementos aún.</div>` : '';
   const divisionBtn = sec === 'griego' ? `<button class="add-item-btn" style="margin-top:2rem;" onclick="openAddDivision()">+ Agregar división</button>` : '';
@@ -1301,7 +1328,7 @@ function renderDetailView(sec) {
     <div class="detail-hero-sub">${meta.sub}</div>
   </div></div>
   <div class="detail-body"><div class="container">
-    ${itemsHTML}${emptyBlock}
+    ${itemsHTML}${sec === 'griego' ? '' : emptyBlock}
     <button class="add-item-btn" style="margin-top:2rem;" onclick="openAdd('${sec}')">+ Agregar ${ADD_LABELS[sec]}</button>
     ${divisionBtn}
   </div></div>
@@ -1309,7 +1336,7 @@ function renderDetailView(sec) {
     <div class="footer-brand">Δíκη+ Boletín — CEFIL PUCP</div>
     <div><span style="cursor:pointer;color:var(--gold);" onclick="showView('home')">← Volver al inicio</span></div>
   </div>
-  <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Universidad ni de la Carrera de Filosofía</div>
+  <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Pontificia Universidad Católica del Perú ni de la Carrera de Filosofía de esta</div>
   </footer>`;
 }
 
@@ -1338,7 +1365,7 @@ function renderDivisionView(divName) {
     <div class="footer-brand">Δíκη+ Boletín — CEFIL PUCP</div>
     <div><span style="cursor:pointer;color:var(--gold);" onclick="showView('home')">← Volver al inicio</span></div>
   </div>
-  <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Universidad ni de la Carrera de Filosofía</div>
+  <div class="site-disclaimer">Δίκη+ es una publicación del Centro de Estudiantes de Filosofía (CEFIL) y no constituye una publicación oficial de la Pontificia Universidad Católica del Perú ni de la Carrera de Filosofía de esta</div>
   </footer>`;
 }
 
